@@ -305,9 +305,8 @@ DESCRIPTION
 
 MIT © [Railslove](https://railslove.com)
 
-<p align="center">
-  <img src="https://github.com/timomeh/roadtrip/raw/master/.github/logo-railslove.svg" width="500px">
-</p>
+![railslove](https://github.com/timomeh/roadtrip/raw/master/.github/logo-railslove.png)
+
 <p align="center">
   Made with 💚 in Cologne
 </p>
