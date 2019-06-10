@@ -78,7 +78,7 @@ Read more here: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-e
 ### 2. Install Roadtrip
 
 ```
-$ npm i -g roadtrip
+$ npm i -g roadtrip-cli
 ```
 
 ### 3. Add a `roadtrip.json` to your project
