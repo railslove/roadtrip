@@ -4,15 +4,16 @@ Roadtrip is a CLI Tool to deploy and host static sites on AWS S3 and CloudFront,
 and manage DNS records using Route53 (optional).
 
 <!-- toc -->
-* [💡 How it works](#-how-it-works)
-* [🏎 Quick Start](#-quick-start)
-* [👩‍💻 Install & Deploy](#-install--deploy)
-* [📝 Project Configuration File](#-project-configuration-file)
-* [🔭 Branch Previews](#-branch-previews)
-* [🔨 Commands](#-commands)
-* [Alternatives](#alternatives)
-* [License](#license)
-<!-- tocstop -->
+
+- [💡 How it works](#-how-it-works)
+- [🏎 Quick Start](#-quick-start)
+- [👩‍💻 Install & Deploy](#-install--deploy)
+- [📝 Project Configuration File](#-project-configuration-file)
+- [🔭 Branch Previews](#-branch-previews)
+- [🔨 Commands](#-commands)
+- [Alternatives](#alternatives)
+- [License](#license)
+  <!-- tocstop -->
 
 # 💡 How it works
 
@@ -153,11 +154,12 @@ available URL with a valid certificate. The URL won't be pretty, but it'll work.
 # 🔨 Commands
 
 <!-- commands -->
-* [`roadtrip bucket ACTION`](#roadtrip-bucket-action)
-* [`roadtrip distribution ACTION`](#roadtrip-distribution-action)
-* [`roadtrip domain ACTION`](#roadtrip-domain-action)
-* [`roadtrip help [COMMAND]`](#roadtrip-help-command)
-* [`roadtrip project ACTION`](#roadtrip-project-action)
+
+- [`roadtrip bucket ACTION`](#roadtrip-bucket-action)
+- [`roadtrip distribution ACTION`](#roadtrip-distribution-action)
+- [`roadtrip domain ACTION`](#roadtrip-domain-action)
+- [`roadtrip help [COMMAND]`](#roadtrip-help-command)
+- [`roadtrip project ACTION`](#roadtrip-project-action)
 
 ## `roadtrip bucket ACTION`
 
@@ -187,7 +189,7 @@ DESCRIPTION
   Configures the bucket as a static website.
 
   sync:
-  Syncs the files of the local directory to the bucket. Only syncs changed files. If a file exists on the bucket but not 
+  Syncs the files of the local directory to the bucket. Only syncs changed files. If a file exists on the bucket but not
   locally, the file will be deleted.
 
   setup:
@@ -213,7 +215,7 @@ DESCRIPTION
   Performs actions related to the CloudFront distribution (CDN).
 
   create:
-  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the 
+  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the
   configuration will be updated.
   It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
 
@@ -244,7 +246,7 @@ DESCRIPTION
   Performs actions realted to the DNS on Route53.
 
   create:
-  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it 
+  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it
   will be updated.
 ```
 
@@ -288,10 +290,11 @@ DESCRIPTION
 
   deploy:
   Runs 'bucket setup', 'distribution setup' and 'domain create' consecutively.
-  Creates a bucket and uploads files onto it. Then it creates and configures a CloudFront CDN and links it to your 
+  Creates a bucket and uploads files onto it. Then it creates and configures a CloudFront CDN and links it to your
   domain.
   This task is idempotent. You can run it again to update your site.
 ```
+
 <!-- commandsstop -->
 
 # Alternatives
@@ -303,7 +306,7 @@ DESCRIPTION
 MIT © [Railslove](https://railslove.com)
 
 <p align="center">
-  <img src="logo-railslove.svg" width="500px">
+  <img src="https://github.com/timomeh/roadtrip/raw/master/.github/logo-railslove.svg" width="500px">
 </p>
 <p align="center">
   Made with 💚 in Cologne
