@@ -5,14 +5,15 @@ import { r53 } from '..'
 
 export default class DomainCommand extends TripCommand {
   async run() {
-    const { args } = this.parse(DomainCommand)
+    const { args, flags } = this.parse(DomainCommand)
 
     const ctx = {
-      siteName: this.siteName
+      siteName: this.siteName,
+      cloudfrontDomainName: flags.alias
     }
 
     const tasks = new Listr(DomainCommand.getTasks(args.action))
-    tasks.run(ctx).catch(error => this.error(error.toString()))
+    return tasks.run(ctx).catch(error => this.error(error.toString()))
   }
 
   static getTasks(action) {
@@ -25,22 +26,29 @@ export default class DomainCommand extends TripCommand {
   }
 }
 
-DomainCommand.description = `Describe the command here
-...
-Extra documentation goes here
+DomainCommand.description = `manage the domain and dns for a site
+Performs actions realted to the DNS on Route53.
+
+create:
+Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it will be updated.
 `
 
 DomainCommand.args = [
   {
     name: 'action',
     required: true,
-    options: ['create']
+    options: ['create'],
+    description: 'action to be performed on the hosted zone'
   }
 ]
 
 DomainCommand.flags = {
   site: flags.string({
     char: 's'
+  }),
+  alias: flags.string({
+    char: 'a',
+    required: true
   }),
   ...TripCommand.flags
 }

@@ -1,5 +1,8 @@
+import path from 'path'
 import { flags } from '@oclif/command'
 import Listr from 'listr'
+import untildify from 'untildify'
+import delay from 'delay'
 import TripCommand from '../lib/command'
 import { s3 } from '..'
 
@@ -9,6 +12,7 @@ export default class BucketCommand extends TripCommand {
 
     const ctx = {
       siteName: this.siteName,
+      projectDir: this.projectDir,
       dir: this.tripconfig.dir || flags.dir,
       indexFile: this.tripconfig.indexFile || flags.indexFile,
       errorFile: this.tripconfig.errorFile || flags.errorFile
@@ -34,32 +38,44 @@ export default class BucketCommand extends TripCommand {
   }
 }
 
-BucketCommand.description = `Describe the command here
-...
-Extra documentation goes here
+BucketCommand.description = `manage the s3 bucket for a site
+Performs actions related to the S3 bucket.
+
+create:
+Creates a bucket with the name of the site. Does nothing if the bucket already exists.
+
+website:
+Configures the bucket as a static website.
+
+sync:
+Syncs the files of the local directory to the bucket. Only syncs changed files. If a file exists on the bucket but not locally, the file will be deleted.
+
+setup:
+Runs create, website and sync consecutively.
 `
 
 BucketCommand.args = [
   {
     name: 'action',
     required: true,
-    options: ['create', 'website', 'sync', 'setup']
+    options: ['create', 'website', 'sync', 'setup'],
+    description: 'action to be performed on the bucket'
   }
 ]
 
 BucketCommand.flags = {
-  site: flags.string({
-    char: 's'
-  }),
   dir: flags.string({
     char: 'd',
-    default: '.'
+    default: '.',
+    description: 'path to the directory which is synced to the bucket'
   }),
   indexFile: flags.string({
-    default: 'index.html'
+    default: 'index.html',
+    description: 'name of the file which acts as index page'
   }),
   errorFile: flags.string({
-    default: '404.html'
+    default: '404.html',
+    description: 'name of the file for 404 Not Found errors'
   }),
   ...TripCommand.flags
 }
@@ -100,7 +116,13 @@ export const syncTask = {
       task.output = `${action}: ${key}`
     }
 
-    const syncs = await s3.sync(ctx.siteName, ctx.dir, { onUpdate })
+    if (!ctx.bucketExisted) {
+      task.output = 'Bucket was just created. Wait 5 seconds before syncing...'
+      await delay(5000)
+    }
+
+    const syncDir = path.resolve(ctx.projectDir, untildify(ctx.dir))
+    const syncs = await s3.sync(ctx.siteName, syncDir, { onUpdate })
     ctx.syncedFiles = syncs
 
     if (syncs.length < 1) {

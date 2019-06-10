@@ -1,5 +1,5 @@
 {
-  "name": "roadtrip",
+  "name": "roadtrip-cli",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -17,6 +17,8 @@
     "@oclif/plugin-help": "^2.2.0",
     "aws-sdk": "^2.470.0",
     "chalk": "^2.4.2",
+    "debug": "^4.1.1",
+    "delay": "^4.2.0",
     "esm": "^3.2.25",
     "fs-extra": "^8.0.1",
     "globby": "^9.2.0",
@@ -36,7 +38,7 @@
   "author": "",
   "license": "MIT",
   "oclif": {
-    "commands": "./cli",
+    "commands": "./cli-comp",
     "bin": "roadtrip",
     "plugins": [
       "@oclif/plugin-help"

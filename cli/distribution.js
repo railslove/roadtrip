@@ -1,7 +1,7 @@
-import { flags } from '@oclif/command'
 import Listr from 'listr'
+import chalk from 'chalk'
 import TripCommand from '../lib/command'
-import { cf } from '..'
+import { cf, acm } from '..'
 
 export default class DistributionCommand extends TripCommand {
   async run() {
@@ -12,13 +12,17 @@ export default class DistributionCommand extends TripCommand {
     }
 
     const tasks = new Listr(DistributionCommand.getTasks(args.action))
-    try {
-      const outCtx = await tasks.run(ctx)
-      this.log('URL of your distribution:')
-      this.log(`  https://${outCtx.cloudfrontDomainName}`)
-    } catch (error) {
-      this.error(error.toString())
+    const outCtx = await tasks
+      .run(ctx)
+      .catch(error => this.error(error.toString()))
+
+    if (!outCtx.cloudfrontExisted) {
+      this.log(
+        chalk`{bold Note:} The distribution was just set up. It can take up to 10-20 minutes to be fully available.`
+      )
     }
+    this.log('URL of your distribution:')
+    this.log(`  https://${outCtx.cloudfrontDomainName}`)
   }
 
   static getTasks(action) {
@@ -35,23 +39,30 @@ export default class DistributionCommand extends TripCommand {
   }
 }
 
-DistributionCommand.description = `Describe the command here
-...
-Extra documentation goes here
+DistributionCommand.description = `manage the cloudfront distribution for a site
+Performs actions related to the CloudFront distribution (CDN).
+
+create:
+Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the configuration will be updated.
+It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
+
+invalidate:
+Invalidates the cache on the distribution.
+
+setup:
+Runs create and invalidate consecutively.
 `
 
 DistributionCommand.args = [
   {
     name: 'action',
     required: true,
-    options: ['create', 'invalidate', 'setup']
+    options: ['create', 'invalidate', 'setup'],
+    description: 'action to be performed on the distribution'
   }
 ]
 
 DistributionCommand.flags = {
-  site: flags.string({
-    char: 's'
-  }),
   ...TripCommand.flags
 }
 
@@ -60,24 +71,35 @@ export const createTask = {
   task: async (ctx, task) => {
     try {
       task.output = 'Checking if distribution exists...'
-      const distribution = await cf.exists(ctx.siteName)
+      const distribution = await cf.get(ctx.siteName)
       ctx.cloudfrontId = distribution.Id
     } catch (_error) {
       // Intentionally left blank. If an error was thrown, a distribution needs
       // to be created.
     }
 
-    ctx.cloudfrontJustCreated = ctx.cloudfrontId ? false : true
+    ctx.cloudfrontExisted = !!ctx.cloudfrontId
 
     let data
-    if (ctx.cloudfrontJustCreated) {
+    if (ctx.cloudfrontExisted) {
       task.output = 'Distribution exists. Updating...'
       data = await cf.update(ctx.siteName, { cloudfrontId: ctx.cloudfrontId })
     } else {
-      task.output = 'Creating distribution...'
-      data = await cf.create(ctx.siteName)
+      task.output = 'Creating distribution. Fetching certificate...'
+      const cert = await acm.getCertificateForDomain(ctx.siteName)
+
+      if (!cert) {
+        throw new Error(
+          `No certificate matching the domain ${
+            ctx.siteName
+          } found in AWS Certificate Manager. Create or import a certificate in order to use this domain.`
+        )
+      }
+
+      data = await cf.create(ctx.siteName, { certARN: cert.CertificateArn })
     }
 
+    task.output = 'Creating distribution...'
     ctx.cloudfrontDomainName = data.DomainName
     this.title = `Create distribution: ${ctx.cloudfrontDomainName}`
   }
@@ -86,7 +108,7 @@ export const createTask = {
 export const invalidateTask = {
   title: 'Invalidate paths on CDN',
   skip: ctx => {
-    if (ctx.cloudfrontJustCreated) {
+    if (!ctx.cloudfrontExisted) {
       return 'The distribution was just created. No paths to invalidate.'
     }
   },
