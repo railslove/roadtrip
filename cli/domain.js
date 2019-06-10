@@ -1,6 +1,5 @@
 import { flags } from '@oclif/command'
 import Listr from 'listr'
-import chalk from 'chalk'
 import TripCommand from '../lib/command'
 import { r53 } from '..'
 
@@ -13,18 +12,7 @@ export default class DomainCommand extends TripCommand {
     }
 
     const tasks = new Listr(DomainCommand.getTasks(args.action))
-    try {
-      const outCtx = await tasks.run(ctx)
-      this.log('URL of your distribution:')
-      this.log(`  https://${outCtx.cloudfrontDomainName}`)
-      if (outCtx.cloudfrontJustCreated) {
-        this.log(
-          chalk`{underline.bold Note:} The distribution was just created. It can take up to 10-20 minutes to finish processing.`
-        )
-      }
-    } catch (error) {
-      this.error(error.toString())
-    }
+    tasks.run(ctx).catch(error => this.error(error.toString()))
   }
 
   static getTasks(action) {
