@@ -7,7 +7,7 @@ and manage DNS records using Route53 (optional).
 * [💡 How it works](#-how-it-works)
 * [🕶 At a glance](#-at-a-glance)
 * [👩‍💻 Install & Deploy](#-install--deploy)
-* [📝 Project Configuration File](#-project-configuration-file)
+* [📝 Configuration](#-configuration)
 * [🔭 Branch Previews](#-branch-previews)
 * [🔨 Command Reference](#-command-reference)
 * [Alternatives](#alternatives)
@@ -87,7 +87,7 @@ Run `project:deploy` inside your project directory to deploy and configure every
 $ roadtrip project:deploy
 ```
 
-# 📝 Project Configuration File
+# 📝 Configuration
 
 Put a `roadtrip.json` in the root of your project.
 
