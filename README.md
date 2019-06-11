@@ -140,7 +140,7 @@ The file which will act as 404 page.
 
 (default: `{}`) – `{ "glob": "cache-control directives" }`  
 Sets the `Cache-Control` header for files matching a glob. If multiple globs
-match, the last match will be applied.
+match, the last match will be applied. Globs will be matched with [minimatch](https://www.npmjs.com/package/minimatch).
 
 If no matches are found, these rules will be applied:
 
@@ -151,8 +151,11 @@ If no matches are found, these rules will be applied:
   This won't cache any files in the browser, but less agressive than html files.
 
 Additionally, `s-maxage=31536000` will be appended if no `s-maxage` directive is
-set. This tells CloudFront to cache files for 1 year. Don't worrky, the
-CloudFront cache will be invalidated in your roadtrip deployment.
+set. This tells CloudFront to cache files for 1 year. Don't worry, the
+CloudFront cache will be invalidated during your roadtrip deployment.
+
+If you change `cacheControl`, all files will be synced during your next
+deployment, which will update all `Cache-Control` headers.
 
 # 🔭 Branch Previews
 
