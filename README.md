@@ -60,12 +60,14 @@ URL of your page:
   Remember that a wildcard is only valid for one domain level.  
   Example: `*.example.com` works with `foo.example.com`, but not with `foo.bar.example.com`
 
-- Create a hosted zone for your domain in AWS Route53. Roadtrip will create new
-  DNS records inside this hosted zone.
+- (Only if Roadtrip should automatically add the CNAME to Route53) Create a
+  hosted zone for your domain in AWS Route53. Roadtrip will create new DNS
+  records inside this hosted zone.
 
 ### 1. Setup AWS Credentials
 
 Create an API user in AWS's IAM Console with access to S3, CloudFront, ACM and Route53.
+
 (TODO: provide policy config)
 
 Add the credentials to the machine where you're deploying from:
