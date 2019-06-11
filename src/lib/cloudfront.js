@@ -1,43 +1,39 @@
 import AWS from 'aws-sdk'
 import { merge } from 'lodash'
-import { s3 } from '..'
+import * as s3 from './s3'
 
 const cf = new AWS.CloudFront({ apiVersion: '2018-11-05', region: 'us-east-1' })
 const BUCKET_TAG_KEY = 'cloudfront_id'
 
-export async function get(siteName) {
-  const cloudfrontId = await getIdFromBucket(siteName)
+export async function get(projectName) {
+  const cloudfrontId = await getDistributionIdFromBucket(projectName)
   if (!cloudfrontId) return undefined
 
   try {
     const data = await cf.getDistribution({ Id: cloudfrontId }).promise()
     return data.Distribution
   } catch (error) {
+    if (error.code !== 'NotFound') throw error
     return undefined
   }
 }
 
-export async function create(siteName, { certARN, configOverrides = {} }) {
-  const defaultConfig = await createConfig({ siteName })
-  const certConfig = {
-    ViewerCertificate: {
-      CloudFrontDefaultCertificate: false,
-      SSLSupportMethod: 'sni-only', // All modern browsers support SNI
-      MinimumProtocolVersion: 'TLSv1', // required when sni-only is set
-      ACMCertificateArn: certARN
-    }
-  }
-  const config = merge(defaultConfig, certConfig, configOverrides)
+export async function create(projectName, domain, { certARN, https }) {
+  const config = await createConfig({ projectName, domain, certARN, https })
 
   const data = await cf
     .createDistribution({ DistributionConfig: config })
     .promise()
-  await setIdToBucket(siteName, data.Id)
+  await setDistributionIdToBucket(projectName, data.Id)
   return data.Distribution
 }
 
-export async function update(siteName, { cloudfrontId, configOverrides = {} }) {
-  const id = cloudfrontId || (await getIdFromBucket(siteName))
+export async function update(
+  projectName,
+  domain,
+  { cloudfrontId, certARN, https }
+) {
+  const id = cloudfrontId || (await getDistributionIdFromBucket(projectName))
 
   // Get the current config from aws. When updating a distribution, CloudFront
   // wants the complete config with more required fields than when creating a
@@ -45,17 +41,12 @@ export async function update(siteName, { cloudfrontId, configOverrides = {} }) {
   const data = await cf.getDistributionConfig({ Id: id }).promise()
   const { DistributionConfig: currentConfig, ETag: etag } = data
 
-  const defaultConfig = await createConfig({ siteName })
+  const defConfig = await createConfig({ projectName, domain, certARN, https })
   const specialConfig = {
     // CallerReference is required but needs to stay the same. Else CloudFront returns an IllegalUpdate error.
     CallerReference: currentConfig.CallerReference
   }
-  const config = merge(
-    currentConfig,
-    defaultConfig,
-    configOverrides,
-    specialConfig
-  )
+  const config = merge(currentConfig, defConfig, specialConfig)
 
   const newData = await cf
     .updateDistribution({ DistributionConfig: config, IfMatch: etag, Id: id })
@@ -63,8 +54,8 @@ export async function update(siteName, { cloudfrontId, configOverrides = {} }) {
   return newData.Distribution
 }
 
-export async function invalidatePaths(siteName, paths, { cloudfrontId } = {}) {
-  const id = cloudfrontId || (await getIdFromBucket(siteName))
+export async function invalidatePaths(projectName, paths, { cloudfrontId }) {
+  const id = cloudfrontId || (await getDistributionIdFromBucket(projectName))
   // make sure paths start with a slash
   const sanitizedPaths = paths.map(p => (p.startsWith('/') ? p : `/${p}`))
 
@@ -82,34 +73,30 @@ export async function invalidatePaths(siteName, paths, { cloudfrontId } = {}) {
     .promise()
 }
 
-async function getIdFromBucket(bucketName) {
-  const value = await s3.getTag(bucketName, BUCKET_TAG_KEY)
+async function getDistributionIdFromBucket(projectName) {
+  const value = await s3.getTag(projectName, BUCKET_TAG_KEY)
   return value
 }
 
-async function setIdToBucket(bucketName, id) {
-  return s3.setTag(bucketName, BUCKET_TAG_KEY, id)
+async function setDistributionIdToBucket(projectName, id) {
+  return s3.setTag(projectName, BUCKET_TAG_KEY, id)
 }
 
-async function createConfig({ siteName }) {
-  const region = await s3.getRegion(siteName)
-  const bucketDomain = `${siteName}.s3-website.${region}.amazonaws.com`
+async function createConfig({ projectName, domain, certARN, https }) {
+  const region = await s3.getRegion(projectName)
+  const bucketDomain = `${projectName}.s3-website.${region}.amazonaws.com`
 
   // dear aws, this is madness.
-  return {
+  const config = {
     Enabled: true,
-    Comment: siteName,
+    Comment: projectName,
     CallerReference: new Date().toISOString(), // some unique thing
     PriceClass: 'PriceClass_100', // us, ca and eu regions
-    Aliases: {
-      Quantity: 1,
-      Items: [siteName]
-    },
     Origins: {
       Quantity: 1,
       Items: [
         {
-          Id: siteName,
+          Id: projectName,
           DomainName: bucketDomain,
           CustomOriginConfig: {
             HTTPPort: 80,
@@ -122,7 +109,7 @@ async function createConfig({ siteName }) {
       ]
     },
     DefaultCacheBehavior: {
-      TargetOriginId: siteName,
+      TargetOriginId: projectName,
       ForwardedValues: {
         QueryString: false,
         Cookies: {
@@ -133,7 +120,8 @@ async function createConfig({ siteName }) {
         Enabled: false,
         Quantity: 0
       },
-      ViewerProtocolPolicy: 'redirect-to-https',
+      ViewerProtocolPolicy:
+        certARN || https ? 'redirect-to-https' : 'allow-all',
       MinTTL: 60 * 60 * 24 * 365, // Cache files on CDN for 1 year. Cache will be invalidated programatically when deploying
       Compress: true,
       AllowedMethods: {
@@ -142,4 +130,28 @@ async function createConfig({ siteName }) {
       }
     }
   }
+
+  if (domain) {
+    config.Aliases = {
+      Quantity: 1,
+      Items: [domain]
+    }
+  }
+
+  if (certARN) {
+    config.ViewerCertificate = {
+      CloudFrontDefaultCertificate: false,
+      SSLSupportMethod: 'sni-only', // All modern browsers support SNI
+      MinimumProtocolVersion: 'TLSv1', // required when sni-only is set
+      ACMCertificateArn: certARN
+    }
+  }
+
+  if (https && !certARN) {
+    config.ViewerCertificate = {
+      CloudFrontDefaultCertificate: true
+    }
+  }
+
+  return config
 }

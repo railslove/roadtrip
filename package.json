@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "module": "main.js",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
-    "prepack": "oclif-dev manifest && oclif-dev readme",
+    "prepack": "npm run oclif-dev -- manifest && npm run oclif-dev readme",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
-    "version": "oclif-dev readme && git add README.md"
+    "version": "npm run oclif-dev -- readme && git add README.md",
+    "oclif-dev": "node -r esm ./node_modules/.bin/oclif-dev"
   },
   "dependencies": {
     "@oclif/command": "^1.5.14",
@@ -40,8 +40,22 @@
   "author": "",
   "license": "MIT",
   "oclif": {
-    "commands": "./cli-comp",
+    "commands": "./src/cli",
     "bin": "roadtrip",
+    "topics": {
+      "bucket": {
+        "description": "manage project's bucket"
+      },
+      "distribution": {
+        "description": "manage project's distribution"
+      },
+      "domain": {
+        "description": "manage project's domain"
+      },
+      "project": {
+        "description": "manage project"
+      }
+    },
     "plugins": [
       "@oclif/plugin-help"
     ]

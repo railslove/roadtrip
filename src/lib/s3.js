@@ -9,9 +9,9 @@ import { getCacheControl } from './cache-control'
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 const BUCKET_CACHE_TAG = 'roadtrip_cache_hash'
 
-export async function exists(bucketName) {
+export async function exists(projectName) {
   try {
-    await s3.headBucket({ Bucket: bucketName }).promise()
+    await s3.headBucket({ Bucket: projectName }).promise()
     return true
   } catch (error) {
     // NotFound means the bucket name can be claimed. Other errors could include
@@ -21,15 +21,15 @@ export async function exists(bucketName) {
   }
 }
 
-export async function create(bucketName) {
+export async function create(projectName) {
   const ACL = 'public-read'
-  return s3.createBucket({ ACL, Bucket: bucketName }).promise()
+  return s3.createBucket({ ACL, Bucket: projectName }).promise()
 }
 
-export async function website(bucketName, { indexFile, errorFile }) {
+export async function website(projectName, { indexFile, errorFile }) {
   return s3
     .putBucketWebsite({
-      Bucket: bucketName,
+      Bucket: projectName,
       WebsiteConfiguration: {
         IndexDocument: { Suffix: indexFile },
         ErrorDocument: { Key: errorFile }
@@ -39,14 +39,14 @@ export async function website(bucketName, { indexFile, errorFile }) {
 }
 
 export async function sync(
-  bucketName,
+  projectName,
   syncDir,
   { onUpdate, cacheControlRules, forceAll = true } = {}
 ) {
   // diff between local and remote
   const actions = await util.promisify(s3diff)({
     local: syncDir,
-    remote: { bucket: bucketName },
+    remote: { bucket: projectName },
     recursive: true,
     globOpts: { dot: false }
   })
@@ -67,7 +67,7 @@ export async function sync(
       case 'create':
         await s3
           .putObject({
-            Bucket: bucketName,
+            Bucket: projectName,
             Body: fs.readFileSync(fullFilePath),
             Key: file,
             ACL: 'public-read',
@@ -79,7 +79,7 @@ export async function sync(
       case 'delete':
         await s3
           .deleteObject({
-            Bucket: bucketName,
+            Bucket: projectName,
             Key: file
           })
           .promise()
@@ -91,43 +91,52 @@ export async function sync(
   return syncs
 }
 
-export async function getRegion(bucketName) {
+export async function getRegion(projectName) {
   const { LocationConstraint: region } = await s3
-    .getBucketLocation({ Bucket: bucketName })
+    .getBucketLocation({ Bucket: projectName })
     .promise()
   return region || 'us-east-1' // aws returns an empty string if region is us-east-1
 }
 
-export async function getCacheHash(bucketName) {
-  const value = await getTag(bucketName, BUCKET_CACHE_TAG)
+export async function getCacheHash(projectName) {
+  const value = await getTag(projectName, BUCKET_CACHE_TAG)
   return value
 }
 
-export async function setCacheHash(bucketName, hash) {
-  return setTag(bucketName, BUCKET_CACHE_TAG, hash)
+export async function setCacheHash(projectName, hash) {
+  return setTag(projectName, BUCKET_CACHE_TAG, hash)
 }
 
-export async function getTag(bucketName, tagKey) {
-  const data = await s3.getBucketTagging({ Bucket: bucketName }).promise()
-  const tag = data.TagSet.find(({ Key }) => Key === tagKey)
+export async function getTag(projectName, tagKey) {
+  const tagSet = await getTagSet(projectName)
+  const tag = tagSet.find(({ Key }) => Key === tagKey)
 
   if (!tag) return undefined
   return tag.Value
 }
 
-export async function setTag(bucketName, tagKey, tagValue) {
-  const { TagSet: existingTags } = await s3
-    .getBucketTagging({ Bucket: bucketName })
-    .promise()
-
+export async function setTag(projectName, tagKey, tagValue) {
+  const existingTags = await getTagSet(projectName)
   const unchangedTags = existingTags.filter(tag => tag.Key !== tagKey)
 
   return s3
     .putBucketTagging({
-      Bucket: bucketName,
+      Bucket: projectName,
       Tagging: {
         TagSet: [...unchangedTags, { Key: tagKey, Value: tagValue }]
       }
     })
     .promise()
+}
+
+async function getTagSet(projectName) {
+  try {
+    const data = await s3.getBucketTagging({ Bucket: projectName }).promise()
+    return data.TagSet
+  } catch (error) {
+    if (error.code !== 'NoSuchTagSet') throw error
+
+    // no tags yet set
+    return []
+  }
 }

@@ -4,16 +4,15 @@ Roadtrip is a CLI Tool to deploy and host static sites on AWS S3 and CloudFront,
 and manage DNS records using Route53 (optional).
 
 <!-- toc -->
-
-- [💡 How it works](#-how-it-works)
-- [🏎 Quick Start](#-quick-start)
-- [👩‍💻 Install & Deploy](#-install--deploy)
-- [📝 Project Configuration File](#-project-configuration-file)
-- [🔭 Branch Previews](#-branch-previews)
-- [🔨 Commands](#-commands)
-- [Alternatives](#alternatives)
-- [License](#license)
-  <!-- tocstop -->
+* [💡 How it works](#-how-it-works)
+* [🕶 At a glance](#-at-a-glance)
+* [👩‍💻 Install & Deploy](#-install--deploy)
+* [📝 Project Configuration File](#-project-configuration-file)
+* [🔭 Branch Previews](#-branch-previews)
+* [🔨 Command Reference](#-command-reference)
+* [Alternatives](#alternatives)
+* [License](#license)
+<!-- tocstop -->
 
 # 💡 How it works
 
@@ -30,39 +29,27 @@ The files on the CloudFront's servers will be cached for 1 year. If you deploy
 changes, Roadtrip will invalidate those caches, causing CloudFront to fetch the
 new version of your site.
 
-# 🏎 Quick Start
+# 🕶 At a glance
 
-```
+```sh
 $ npm i -g roadtrip-cli
 
-$ roadtrip project deploy --domain
-✔ Create bucket
-✔ Make bucket a website
-✔ Synced 21 files
-✔ Create distribution
-↓ Invalidate paths on CDN [skipped]
-  → The distribution was just created. No paths to invalidate.
-✔ Create dns entry
-Note: The distribution was just set up. It can take up to 10-20 minutes to be fully available.
+$ roadtrip project:deploy --connectDomain
+  ✔ Create bucket
+  ✔ Make bucket a website
+  ✔ Synced 21 files
+  ✔ Create distribution
+  ↓ Invalidate paths on CDN [skipped]
+    → The distribution was just created. No paths to invalidate.
+  ✔ Connect dns entry
 
-URL of your distribution:
-  https://a21xi98r7tykj.cloudfront.net
-URL of your page:
-  https://example.com
+Note: The distribution was just set up.
+It can take up to 10-20 minutes to be fully available.
+
+=> CloudFront domain: a21xi98r7tykj.cloudfront.net
 ```
 
 # 👩‍💻 Install & Deploy
-
-### 0. Before your first deploy
-
-- Create a certificate for your domain inside your AWS Console's Certificate Manager.
-  You can use a wildcard certificate, e.g. for different environments on subdomains.
-  Remember that a wildcard is only valid for one domain level.  
-  Example: `*.example.com` works with `foo.example.com`, but not with `foo.bar.example.com`
-
-- (Only if Roadtrip should automatically add the CNAME to Route53) Create a
-  hosted zone for your domain in AWS Route53. Roadtrip will create new DNS
-  records inside this hosted zone.
 
 ### 1. Setup AWS Credentials
 
@@ -87,17 +74,17 @@ $ npm i -g roadtrip-cli
 
 ```json
 {
-  "site": "example.com",
+  "name": "example-project",
   "dir": "./build"
 }
 ```
 
 ### 4. Deploy
 
-Run `project deploy` inside your project directory to deploy and configure everything.
+Run `project:deploy` inside your project directory to deploy and configure everything.
 
 ```
-$ roadtrip project deploy
+$ roadtrip project:deploy
 ```
 
 # 📝 Project Configuration File
@@ -108,48 +95,101 @@ Example:
 
 ```json
 {
-  "site": "example.com",
+  "name": "example-project",
+  "domain": "example.com",
   "dir": "./build",
+  "https": false,
   "indexFile": "index.html",
-  "errorFile": "index.html",
+  "errorFile": "404.html",
   "cacheControl": {
     "**/*.js": "public, max-age=31536000, immutable"
   }
 }
 ```
 
-#### site
+#### name
 
-(required)  
-The Domain of your page. This will be the bucket's name and added as alias to CloudFront.
+The name of your project. This will be the bucket's name. Can be overridden with
+the `--name` flag.
+
+#### domain
+
+A custom domain which will be added as alias to CloudFront. This allows you to
+add the CloudFront domain as CNAME to your domain.
+
+If you don't specify a domain, you can still use the random CloudFront domain.
+
+##### Automatically connect cloudfront to your domain
+
+Using the `--connectDomain` flag, roadtrip will automatically add an alias
+(CNAME) to your dns records.
+
+This only works if you use AWS Route53 as nameserver. Create a hosted zone for
+your domain in AWS Route53, if you don't already have one. The record will
+automatically be added to the hosted zone for your domain.
 
 #### dir
 
-(default: `.`)  
-The directory to deploy to S3.
+Default: `.`
+
+The directory to sync with the bucket.
+
+#### https
+
+Default: `false`
+
+Use `true` to enable https. If you use a custom domain, you must have a valid
+certificate in AWS' Certificate Manager.
+
+##### Custom Domain & https
+
+You can use a custom domain and enable https: add a certificate for your domain
+inside AWS' Certificate Manager. AWS Certificates cost **\$0**.
+
+You can also use a wildcard certificate, e.g. for different environments on
+subdomains. Remember that a wildcard is only valid for one domain level.  
+Example: `*.example.com` works with `foo.example.com`, but not with `foo.bar.example.com`
 
 #### indexFile
 
-(default: `index.html`)  
+Default: `index.html`
+
 The file which will act as index page.
 
 #### errorFile
 
-(default: `404.html`)  
+Default: `404.html`
+
 The file which will act as 404 page.
 
 #### cacheControl
 
-(default: `{}`) – `{ "glob": "cache-control directives" }`  
-Sets the `Cache-Control` header for files matching a glob. If multiple globs
-match, the last match will be applied. Globs will be matched with [minimatch](https://www.npmjs.com/package/minimatch).
+Default: `{}`
+
+Allows to add custom `Cache-Control` headers to the bucket's files using glob
+matching.
+
+Example:
+
+```json
+{
+  "cacheControl": {
+    "**/*.{js,css}": "public, max-age=31536000, immutable",
+    "**/*.json": "private, max-age=0, must-revalidate"
+  }
+}
+```
+
+If multiple globs match, the last match will be applied. Globs are matched with
+[minimatch](https://www.npmjs.com/package/minimatch).
 
 If no matches are found, these rules will be applied:
 
-- `**/*.html`: `private, max-age=0, no-cache, no-store, must-revalidate`  
+- `**/\*.html`:`private, max-age=0, no-cache, no-store, must-revalidate`  
   This won't cache html files in the browser, even if the page was loaded with a
   history even (e.g. browser's back button). For more infos, [check this article](https://engineering.mixmax.com/blog/chrome-back-button-cache-no-store).
-- `**/*`: `public, max-age=0, must-revalidate`  
+
+- `**/\*`:`public, max-age=0, must-revalidate`  
   This won't cache any files in the browser, but less agressive than html files.
 
 Additionally, `s-maxage=31536000` will be appended if no `s-maxage` directive is
@@ -159,121 +199,169 @@ CloudFront cache will be invalidated during your roadtrip deployment.
 If you change `cacheControl`, all files will be synced during your next
 deployment, which will update all `Cache-Control` headers.
 
+Warning: Without the globstar (`**/`), only files in the root will match.
+Example: `*.png` will match `launch.png`, but not `assets/launch.png`. To match
+all png's, use `**/*.png`.
+
 # 🔭 Branch Previews
 
-You can also use Roadtrip to create preview environments of a branch, simply by
-overriding the domain with the `--site` flag.
+You can also use Roadtrip to create preview environments of a branch by
+overriding the project's name with the `--name` flag.
 
 ```sh
-$ roadtrip project deploy --site=preview-${BRANCH_NAME}.example.foo
+$ roadtrip project:deploy --name=example-project-${BRANCH_NAME}
 ```
 
 Keep in mind that CloudFront needs ~10 minutes to roll out new distributions, so
 your branch preview won't be available immediately.  
 If you want a preview without this delay, you could have some environments
-already rolled out, e.g. `preview-01` and `preview-02`, and use those as
-deployment targets.
+already set-up.
 
-This even works if you don't use Route53: CloudFront returns a publicly
-available URL with a valid certificate. The URL won't be pretty, but it'll work.
+You can also use a custom domain:
 
-# 🔨 Commands
+```sh
+$ roadtrip project:deploy \
+  --name=example-project-${BRANCH_NAME} \
+  --domain=preview-${BRANCH_NAME}.example.com \
+  --connectDomain
+```
+
+# 🔨 Command Reference
 
 <!-- commands -->
+* [`roadtrip bucket:create`](#roadtrip-bucketcreate)
+* [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
+* [`roadtrip bucket:sync`](#roadtrip-bucketsync)
+* [`roadtrip bucket:website`](#roadtrip-bucketwebsite)
+* [`roadtrip distribution:create`](#roadtrip-distributioncreate)
+* [`roadtrip distribution:invalidate`](#roadtrip-distributioninvalidate)
+* [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
+* [`roadtrip help [COMMAND]`](#roadtrip-help-command)
+* [`roadtrip project:deploy`](#roadtrip-projectdeploy)
 
-- [`roadtrip bucket ACTION`](#roadtrip-bucket-action)
-- [`roadtrip distribution ACTION`](#roadtrip-distribution-action)
-- [`roadtrip domain ACTION`](#roadtrip-domain-action)
-- [`roadtrip help [COMMAND]`](#roadtrip-help-command)
-- [`roadtrip project ACTION`](#roadtrip-project-action)
+## `roadtrip bucket:create`
 
-## `roadtrip bucket ACTION`
-
-manage the s3 bucket for a site
-
-```
-USAGE
-  $ roadtrip bucket ACTION
-
-ARGUMENTS
-  ACTION  (create|website|sync|setup) action to be performed on the bucket
-
-OPTIONS
-  -c, --config=config    [default: roadtrip.json] path to a roadtrip configuration file
-  -d, --dir=dir          [default: .] path to the directory which is synced to the bucket
-  -s, --site=site        domain name under which the site will be available
-  --errorFile=errorFile  [default: 404.html] name of the file for 404 Not Found errors
-  --indexFile=indexFile  [default: index.html] name of the file which acts as index page
-
-DESCRIPTION
-  Performs actions related to the S3 bucket.
-
-  create:
-  Creates a bucket with the name of the site. Does nothing if the bucket already exists.
-
-  website:
-  Configures the bucket as a static website.
-
-  sync:
-  Syncs the files of the local directory to the bucket. Only syncs changed files.
-  If a file exists on the bucket but not locally, the file will be deleted.
-  If cacheControl has changed, all files are treated as changed files to update Cache-Control headers.
-
-  setup:
-  Runs create, website and sync consecutively.
-```
-
-## `roadtrip distribution ACTION`
-
-manage the cloudfront distribution for a site
+create roadtrip s3 bucket
 
 ```
 USAGE
-  $ roadtrip distribution ACTION
-
-ARGUMENTS
-  ACTION  (create|invalidate|setup) action to be performed on the distribution
+  $ roadtrip bucket:create
 
 OPTIONS
   -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
-  -s, --site=site      domain name under which the site will be available
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
 
 DESCRIPTION
-  Performs actions related to the CloudFront distribution (CDN).
+  Creates a bucket with the name of the site. Does nothing if the bucket already exists.
+```
 
-  create:
-  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the
+## `roadtrip bucket:setup`
+
+fully setup roadtrip s3 bucket
+
+```
+USAGE
+  $ roadtrip bucket:setup
+
+OPTIONS
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
+
+DESCRIPTION
+  Creates, configures and syncs a project. It runs bucket:setup, bucket:website and bucket:sync consecutively.
+```
+
+## `roadtrip bucket:sync`
+
+syncs the project to the s3 bucket
+
+```
+USAGE
+  $ roadtrip bucket:sync
+
+OPTIONS
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
+
+DESCRIPTION
+  Checks which files have changed and creates/updates/deletes them in the bucket.
+```
+
+## `roadtrip bucket:website`
+
+configures the s3 bucket as website
+
+```
+USAGE
+  $ roadtrip bucket:website
+
+OPTIONS
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
+```
+
+## `roadtrip distribution:create`
+
+create cloudfront for project
+
+```
+USAGE
+  $ roadtrip distribution:create
+
+OPTIONS
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
+
+DESCRIPTION
+  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the 
   configuration will be updated.
   It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
-
-  invalidate:
-  Invalidates the cache on the distribution.
-
-  setup:
-  Runs create and invalidate consecutively.
 ```
 
-## `roadtrip domain ACTION`
+## `roadtrip distribution:invalidate`
 
-manage the domain and dns for a site
+invalidates the distribution's cache
 
 ```
 USAGE
-  $ roadtrip domain ACTION
-
-ARGUMENTS
-  ACTION  (create) action to be performed on the hosted zone
+  $ roadtrip distribution:invalidate
 
 OPTIONS
-  -a, --alias=alias    (required)
   -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
-  -s, --site=site      domain name under which the site will be available
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
+```
+
+## `roadtrip domain:connect ALIAS`
+
+connect a custom domain to the project
+
+```
+USAGE
+  $ roadtrip domain:connect ALIAS
+
+ARGUMENTS
+  ALIAS  alias domain to add as CNAME record, e.g. cloudfront the domain
+
+OPTIONS
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --[no-]https         set up the site with https
 
 DESCRIPTION
-  Performs actions realted to the DNS on Route53.
-
-  create:
-  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it
+  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it 
   will be updated.
 ```
 
@@ -294,35 +382,26 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.0/src/commands/help.ts)_
 
-## `roadtrip project ACTION`
+## `roadtrip project:deploy`
 
-manage the roadtrip project
+deploys the project
 
 ```
 USAGE
-  $ roadtrip project ACTION
-
-ARGUMENTS
-  ACTION  (deploy) actions to control the project
+  $ roadtrip project:deploy
 
 OPTIONS
-  -c, --config=config    [default: roadtrip.json] path to a roadtrip configuration file
-  -d, --dir=dir          [default: .] path to the directory which is synced to the bucket
-  -s, --site=site        domain name under which the site will be available
-  --domain               create dns entry if no one exists
-  --errorFile=errorFile  [default: 404.html] name of the file for 404 Not Found errors
-  --indexFile=indexFile  [default: index.html] name of the file which acts as index page
+  -c, --config=config  [default: roadtrip.json] path to a roadtrip configuration file
+  -d, --domain=domain  custom domain for cloudfront
+  -n, --name=name      name of the project
+  --connectDomain      also connect domain on route53
+  --[no-]https         set up the site with https
 
 DESCRIPTION
-  Perform all actions for your roadtrip project.
-
-  deploy:
-  Runs 'bucket setup', 'distribution setup' and 'domain create' consecutively.
-  Creates a bucket and uploads files onto it. Then it creates and configures a CloudFront CDN and links it to your
+  Creates a bucket and uploads files onto it. Creates and configures a CloudFront distribution and links it to your 
   domain.
-  This task is idempotent. You can run it again to update your site.
+  This task is idempotent. You can run it again to update the site.
 ```
-
 <!-- commandsstop -->
 
 # Alternatives
