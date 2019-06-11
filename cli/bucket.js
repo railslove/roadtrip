@@ -4,7 +4,7 @@ import Listr from 'listr'
 import untildify from 'untildify'
 import delay from 'delay'
 import TripCommand from '../lib/command'
-import { s3 } from '..'
+import { s3, cacheControl } from '..'
 
 export default class BucketCommand extends TripCommand {
   async run() {
@@ -15,7 +15,8 @@ export default class BucketCommand extends TripCommand {
       projectDir: this.projectDir,
       dir: this.tripconfig.dir || flags.dir,
       indexFile: this.tripconfig.indexFile || flags.indexFile,
-      errorFile: this.tripconfig.errorFile || flags.errorFile
+      errorFile: this.tripconfig.errorFile || flags.errorFile,
+      cacheControlRules: this.tripconfig.cacheControl || {}
     }
 
     const tasks = new Listr(BucketCommand.getTasks(args.action))
@@ -48,7 +49,9 @@ website:
 Configures the bucket as a static website.
 
 sync:
-Syncs the files of the local directory to the bucket. Only syncs changed files. If a file exists on the bucket but not locally, the file will be deleted.
+Syncs the files of the local directory to the bucket. Only syncs changed files.
+If a file exists on the bucket but not locally, the file will be deleted.
+If cacheControl has changed, all files are treated as changed files to update Cache-Control headers.
 
 setup:
 Runs create, website and sync consecutively.
@@ -112,17 +115,33 @@ export const websiteTask = {
 export const syncTask = {
   title: 'Sync files',
   task: async (ctx, task) => {
+    if (!ctx.bucketExisted) {
+      const waitSec = 5
+      task.output = `Bucket was just created. Wait ${waitSec} seconds before continuing...`
+      await delay(waitSec * 1000)
+    }
+
+    task.output = 'Checking if cache-control has changed...'
+    const existingCacheHash = await s3.getCacheHash(ctx.siteName)
+    const nowCacheHash = cacheControl.generateCacheHash(ctx.cacheControlRules)
+    const cacheRulesChanged = existingCacheHash !== nowCacheHash
+
+    if (cacheRulesChanged) {
+      task.output = 'Cache rules have changed. Saving version on bucket...'
+      await s3.setCacheHash(ctx.siteName, nowCacheHash)
+    }
+
+    task.output = 'Syncing...'
     function onUpdate(action, key) {
       task.output = `${action}: ${key}`
     }
 
-    if (!ctx.bucketExisted) {
-      task.output = 'Bucket was just created. Wait 5 seconds before syncing...'
-      await delay(5000)
-    }
-
     const syncDir = path.resolve(ctx.projectDir, untildify(ctx.dir))
-    const syncs = await s3.sync(ctx.siteName, syncDir, { onUpdate })
+    const syncs = await s3.sync(ctx.siteName, syncDir, {
+      onUpdate,
+      cacheControlRules: ctx.cacheControlRules,
+      forceAll: cacheRulesChanged
+    })
     ctx.syncedFiles = syncs
 
     if (syncs.length < 1) {

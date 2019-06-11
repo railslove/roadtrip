@@ -1,3 +1,4 @@
+import { flags } from '@oclif/command'
 import Listr from 'listr'
 import chalk from 'chalk'
 import TripCommand from '../lib/command'
@@ -14,15 +15,16 @@ export default class ProjectCommand extends TripCommand {
       projectDir: this.projectDir,
       dir: this.tripconfig.dir || flags.dir,
       indexFile: this.tripconfig.indexFile || flags.indexFile,
-      errorFile: this.tripconfig.errorFile || flags.errorFile
+      errorFile: this.tripconfig.errorFile || flags.errorFile,
+      cacheControlRules: this.tripconfig.cacheControl || {}
     }
 
-    const tasks = new Listr(ProjectCommand.getTasks(args.action))
+    const tasks = new Listr(ProjectCommand.getTasks(args.action, flags))
     const outCtx = await tasks
       .run(ctx)
       .catch(error => this.error(error.toString()))
 
-    if (!outCtx.cloudfrontExisted) {
+    if (outCtx.cloudfrontJustCreated) {
       this.log(
         chalk`{bold Note:} The distribution was just set up. It can take up to 10-20 minutes to be fully available.`
       )
@@ -35,13 +37,13 @@ export default class ProjectCommand extends TripCommand {
     this.log(`  https://${this.siteName}`)
   }
 
-  static getTasks(action) {
+  static getTasks(action, flags) {
     switch (action) {
       case 'deploy':
         return [
           ...BucketCommand.getTasks('setup'),
           ...DistributionCommand.getTasks('setup'),
-          ...DomainCommand.getTasks('create')
+          ...(flags.domain ? DomainCommand.getTasks('create') : [])
         ]
       default:
         return []
@@ -68,6 +70,10 @@ ProjectCommand.args = [
 ]
 
 ProjectCommand.flags = {
+  domain: flags.boolean({
+    description: 'create dns entry if no one exists',
+    default: false
+  }),
   ...BucketCommand.flags,
   ...TripCommand.flags
 }

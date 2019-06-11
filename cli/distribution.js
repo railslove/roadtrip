@@ -16,13 +16,15 @@ export default class DistributionCommand extends TripCommand {
       .run(ctx)
       .catch(error => this.error(error.toString()))
 
-    if (!outCtx.cloudfrontExisted) {
-      this.log(
-        chalk`{bold Note:} The distribution was just set up. It can take up to 10-20 minutes to be fully available.`
-      )
+    if (args.action !== 'invalidate') {
+      if (outCtx.cloudfrontJustCreated) {
+        this.log(
+          chalk`{bold Note:} The distribution was just set up. It can take up to 10-20 minutes to be fully available.`
+        )
+      }
+      this.log('URL of your distribution:')
+      this.log(`  https://${outCtx.cloudfrontDomainName}`)
     }
-    this.log('URL of your distribution:')
-    this.log(`  https://${outCtx.cloudfrontDomainName}`)
   }
 
   static getTasks(action) {
@@ -74,41 +76,44 @@ export const createTask = {
       const distribution = await cf.get(ctx.siteName)
       ctx.cloudfrontId = distribution.Id
     } catch (_error) {
+      throw _error
       // Intentionally left blank. If an error was thrown, a distribution needs
       // to be created.
     }
 
-    ctx.cloudfrontExisted = !!ctx.cloudfrontId
-
-    let data
-    if (ctx.cloudfrontExisted) {
+    if (ctx.cloudfrontId) {
+      task.title = 'Update distribution'
       task.output = 'Distribution exists. Updating...'
-      data = await cf.update(ctx.siteName, { cloudfrontId: ctx.cloudfrontId })
+      const updateResponse = await cf.update(ctx.siteName, {
+        cloudfrontId: ctx.cloudfrontId
+      })
+      ctx.cloudfrontDomainName = updateResponse.DomainName
+      task.title = `Update distribution: ${ctx.cloudfrontDomainName}`
     } else {
       task.output = 'Creating distribution. Fetching certificate...'
       const cert = await acm.getCertificateForDomain(ctx.siteName)
+      ctx.cloudfrontJustCreated = true
 
       if (!cert) {
         throw new Error(
-          `No certificate matching the domain ${
-            ctx.siteName
-          } found in AWS Certificate Manager. Create or import a certificate in order to use this domain.`
+          `No certificate matching the domain ${ctx.siteName} found in AWS Certificate Manager. Create or import a certificate in order to use this domain.`
         )
       }
 
-      data = await cf.create(ctx.siteName, { certARN: cert.CertificateArn })
+      task.output = 'Creating distribution...'
+      const createResponse = await cf.create(ctx.siteName, {
+        certARN: cert.CertificateArn
+      })
+      ctx.cloudfrontDomainName = createResponse.DomainName
+      task.title = `Create distribution: ${ctx.cloudfrontDomainName}`
     }
-
-    task.output = 'Creating distribution...'
-    ctx.cloudfrontDomainName = data.DomainName
-    this.title = `Create distribution: ${ctx.cloudfrontDomainName}`
   }
 }
 
 export const invalidateTask = {
   title: 'Invalidate paths on CDN',
   skip: ctx => {
-    if (!ctx.cloudfrontExisted) {
+    if (ctx.cloudfrontJustCreated) {
       return 'The distribution was just created. No paths to invalidate.'
     }
   },

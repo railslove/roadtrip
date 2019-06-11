@@ -109,7 +109,10 @@ Example:
   "site": "example.com",
   "dir": "./build",
   "indexFile": "index.html",
-  "errorFile": "index.html"
+  "errorFile": "index.html",
+  "cacheControl": {
+    "**/*.js": "public, max-age=31536000, immutable"
+  }
 }
 ```
 
@@ -132,6 +135,24 @@ The file which will act as index page.
 
 (default: `404.html`)  
 The file which will act as 404 page.
+
+#### cacheControl
+
+(default: `{}`) – `{ "glob": "cache-control directives" }`  
+Sets the `Cache-Control` header for files matching a glob. If multiple globs
+match, the last match will be applied.
+
+If no matches are found, these rules will be applied:
+
+- `**/*.html`: `private, max-age=0, no-cache, no-store, must-revalidate`  
+  This won't cache html files in the browser, even if the page was loaded with a
+  history even (e.g. browser's back button). For more infos, [check this article](https://engineering.mixmax.com/blog/chrome-back-button-cache-no-store).
+- `**/*`: `public, max-age=0, must-revalidate`  
+  This won't cache any files in the browser, but less agressive than html files.
+
+Additionally, `s-maxage=31536000` will be appended if no `s-maxage` directive is
+set. This tells CloudFront to cache files for 1 year. Don't worrky, the
+CloudFront cache will be invalidated in your roadtrip deployment.
 
 # 🔭 Branch Previews
 
