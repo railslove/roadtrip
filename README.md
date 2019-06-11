@@ -35,7 +35,7 @@ new version of your site.
 ```
 $ npm i -g roadtrip-cli
 
-$ roadtrip project deploy
+$ roadtrip project deploy --domain
 ✔ Create bucket
 ✔ Make bucket a website
 ✔ Synced 21 files
@@ -213,8 +213,9 @@ DESCRIPTION
   Configures the bucket as a static website.
 
   sync:
-  Syncs the files of the local directory to the bucket. Only syncs changed files. If a file exists on the bucket but not
-  locally, the file will be deleted.
+  Syncs the files of the local directory to the bucket. Only syncs changed files.
+  If a file exists on the bucket but not locally, the file will be deleted.
+  If cacheControl has changed, all files are treated as changed files to update Cache-Control headers.
 
   setup:
   Runs create, website and sync consecutively.
@@ -306,6 +307,7 @@ OPTIONS
   -c, --config=config    [default: roadtrip.json] path to a roadtrip configuration file
   -d, --dir=dir          [default: .] path to the directory which is synced to the bucket
   -s, --site=site        domain name under which the site will be available
+  --domain               create dns entry if no one exists
   --errorFile=errorFile  [default: 404.html] name of the file for 404 Not Found errors
   --indexFile=indexFile  [default: index.html] name of the file which acts as index page
 
