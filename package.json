@@ -6,7 +6,7 @@
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "prepack": "npm run oclif-dev -- manifest && npm run oclif-dev readme",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\"",
     "lint": "eslint .",
     "version": "npm run oclif-dev -- readme && git add README.md",
     "oclif-dev": "node -r esm ./node_modules/.bin/oclif-dev"
@@ -14,7 +14,9 @@
   "dependencies": {
     "@oclif/command": "^1.5.14",
     "@oclif/config": "^1.13.0",
+    "@oclif/plugin-autocomplete": "^0.1.1",
     "@oclif/plugin-help": "^2.2.0",
+    "@oclif/plugin-update": "^1.3.9",
     "aws-sdk": "^2.470.0",
     "chalk": "^2.4.2",
     "debug": "^4.1.1",
@@ -57,14 +59,17 @@
       }
     },
     "plugins": [
-      "@oclif/plugin-help"
+      "@oclif/plugin-help",
+      "@oclif/plugin-update",
+      "@oclif/plugin-autocomplete",
+      "@oclif/plugin-not-found"
     ]
   },
   "files": [
     "/bin",
+    "/npm-shrinkwrap.json",
     "/oclif.manifest.json",
-    "/cli",
-    "/lib"
+    "/src"
   ],
   "prettier": {
     "semi": false,
