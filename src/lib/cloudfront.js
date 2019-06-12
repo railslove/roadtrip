@@ -99,8 +99,7 @@ async function setDistributionIdToBucket(projectName, id) {
 }
 
 async function createConfig({ projectName, domain, certARN, https }) {
-  const region = await s3.getRegion(projectName)
-  const bucketDomain = `${projectName}.s3-website.${region}.amazonaws.com`
+  const bucketDomain = await s3.getDomain(projectName)
 
   // dear aws, this is madness.
   const config = {

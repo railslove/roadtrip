@@ -118,6 +118,11 @@ export async function getRegion(projectName) {
   return region || 'us-east-1' // aws returns an empty string if region is us-east-1
 }
 
+export async function getDomain(projectName) {
+  const region = await getRegion(projectName)
+  return `${projectName}.s3-website.${region}.amazonaws.com`
+}
+
 export async function getCacheHash(projectName) {
   const value = await getTag(projectName, BUCKET_CACHE_TAG)
   return value

@@ -6,7 +6,8 @@ export const connect = {
   title: 'Connect dns entry',
   task: async (ctx, task) => {
     task.output = 'Checking if record exists...'
-    const exists = await r53.exists(ctx.trip.name, ctx.cloudfrontDomainName)
+    const alias = ctx.cloudfrontDomainName || ctx.bucketDomainName
+    const exists = await r53.exists(ctx.trip.name, alias)
     debug('Record exists and is correct: %s', exists)
 
     if (exists) {
@@ -15,7 +16,7 @@ export const connect = {
     }
 
     task.output = 'Insert/update dns record...'
-    debug('Upsert record: %s ALIAS %s', ctx.trip.name, ctx.cloudfrontDomainName)
-    return r53.upsert(ctx.trip.name, ctx.cloudfrontDomainName)
+    debug('Upsert record: %s ALIAS %s', ctx.trip.name, alias)
+    return r53.upsert(ctx.trip.name, alias)
   }
 }
