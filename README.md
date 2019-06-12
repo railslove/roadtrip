@@ -22,8 +22,8 @@ which serves files from the S3 bucket. This will make your website load much
 faster, and allows you to use https (which isn't supported by S3's website hosting).
 CloudFront takes ~10 minutes to roll out the new distribution.
 
-Optionally Roadtrip will also create a dns alias record in Route53. If you don't
-manage your nameserver through Route53, you can create a CNAME manually
+Optionally Roadtrip will also create a DNS alias record in Route53. If you don't
+manage your nameserver through Route53, you can create a CNAME manually.
 
 The files on the CloudFront's servers will be cached for 1 year. If you deploy
 changes, Roadtrip will invalidate those caches, causing CloudFront to fetch the
