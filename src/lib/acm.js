@@ -1,19 +1,21 @@
 import AWS from 'aws-sdk'
 
+const debug = require('debug')('roadtrip:lib:acm')
 const acm = new AWS.ACM({ apiVersion: '2015-12-08' })
 
 export async function getCertificateForDomain(domain) {
-  const data = await acm
-    .listCertificates({
-      CertificateStatuses: ['PENDING_VALIDATION', 'ISSUED']
-    })
-    .promise()
+  const params = {
+    CertificateStatuses: ['PENDING_VALIDATION', 'ISSUED']
+  }
+  const data = await acm.listCertificates().promise()
+  debug('ACM Certificates with params %o: %O', params, data)
 
   // Get all certificates which match the domainName
   const [tld, sld] = domain.split('.').reverse()
   const matchingCerts = data.CertificateSummaryList.filter(cert =>
     cert.DomainName.endsWith(`${sld}.${tld}`)
   )
+  debug('Found matching certificates: %O', matchingCerts)
 
   // Get all data of those certificates
   const allCertData = await Promise.all(
@@ -43,6 +45,7 @@ export async function getCertificateForDomain(domain) {
       return false
     }
   })
+  debug('Found all possible certificates: %O', certMatches)
 
   // No certificate found.
   if (certMatches.length < 1) return null

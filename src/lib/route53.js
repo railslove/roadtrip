@@ -1,10 +1,13 @@
 import AWS from 'aws-sdk'
 
+const debug = require('debug')('roadtrip:lib:route53')
 const r53 = new AWS.Route53({ apiVersion: '2013-04-01' })
 
 export async function exists(domain, alias) {
   const zoneId = await getZoneId(domain)
+  debug('Found hosted zone id %s for domain %s', domain, zoneId)
   const record = await getRecord(zoneId, domain)
+  debug('Record found for domain: %O', record)
 
   if (!record || !record.AliasTarget) return false
 
@@ -37,6 +40,7 @@ export async function upsert(domain, alias) {
     }
   }
 
+  debug('Upsert domain %s: %O', config)
   return r53.changeResourceRecordSets(config).promise()
 }
 
@@ -48,6 +52,7 @@ async function getRecord(zoneId, domain) {
       StartRecordType: 'A' // this doesn't mean aws-sdk only returns A records. It just returns them first, if there are any.
     })
     .promise()
+  debug('Record Set for domain %s with zoneId %s: %O', zoneId, domain)
 
   // Check if results were returned and if an A record with that domain is set up.
   if (
@@ -56,6 +61,7 @@ async function getRecord(zoneId, domain) {
     !data.ResourceRecordSets[0].Name.includes(domain) ||
     data.ResourceRecordSets[0].Type !== 'A'
   ) {
+    debug('Found no matches')
     return undefined
   }
 
@@ -67,8 +73,10 @@ async function getRecord(zoneId, domain) {
 async function getZoneId(domain) {
   const [tld, sld] = domain.split('.').reverse()
   const dnsName = `${sld}.${tld}`
+  debug('Domain %s has DNS name %s', domain, dnsName)
 
   const data = await r53.listHostedZonesByName({ DNSName: dnsName }).promise()
+  debug('HostedZones for dnsName %s: %O', dnsName, data)
 
   if (!data.HostedZones || data.HostedZones.length < 1) {
     throw new Error('No hosted zone found on aws for dns name: ' + dnsName)

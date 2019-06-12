@@ -1,4 +1,7 @@
 node_modules
 /dist
 /tmp
-oclif.manifest.json
+
+# just in case
+/package-lock.json
+/yarn.json

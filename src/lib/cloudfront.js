@@ -2,28 +2,38 @@ import AWS from 'aws-sdk'
 import { merge } from 'lodash'
 import * as s3 from './s3'
 
+const debug = require('debug')('roadtrip:lib:cloudfront')
 const cf = new AWS.CloudFront({ apiVersion: '2018-11-05', region: 'us-east-1' })
 const BUCKET_TAG_KEY = 'cloudfront_id'
 
 export async function get(projectName) {
   const cloudfrontId = await getDistributionIdFromBucket(projectName)
+  debug('Bucket: %s, CloudFront Id: %s', projectName, cloudfrontId)
   if (!cloudfrontId) return undefined
 
   try {
     const data = await cf.getDistribution({ Id: cloudfrontId }).promise()
+    debug('CloudFront exists: %O', data)
     return data.Distribution
   } catch (error) {
-    if (error.code !== 'NotFound') throw error
+    if (error.code !== 'NotFound') {
+      debug('cf.getDistribution: Unexpected error code %s', error.code)
+      throw error
+    }
+
+    debug('No CloudFront for bucket %s found.', projectName)
     return undefined
   }
 }
 
 export async function create(projectName, domain, { certARN, https }) {
   const config = await createConfig({ projectName, domain, certARN, https })
+  debug('Create CloudFront with config: %O', config)
 
   const data = await cf
     .createDistribution({ DistributionConfig: config })
     .promise()
+  debug('CloudFront created: %O', data)
   await setDistributionIdToBucket(projectName, data.Id)
   return data.Distribution
 }
@@ -40,6 +50,11 @@ export async function update(
   // distribution.
   const data = await cf.getDistributionConfig({ Id: id }).promise()
   const { DistributionConfig: currentConfig, ETag: etag } = data
+  debug(
+    'Current CloudFront Config for bucket %s: %O',
+    projectName,
+    currentConfig
+  )
 
   const defConfig = await createConfig({ projectName, domain, certARN, https })
   const specialConfig = {
@@ -47,6 +62,7 @@ export async function update(
     CallerReference: currentConfig.CallerReference
   }
   const config = merge(currentConfig, defConfig, specialConfig)
+  debug('Update CloudFront %s with config: %O', id, config)
 
   const newData = await cf
     .updateDistribution({ DistributionConfig: config, IfMatch: etag, Id: id })
@@ -59,18 +75,18 @@ export async function invalidatePaths(projectName, paths, { cloudfrontId }) {
   // make sure paths start with a slash
   const sanitizedPaths = paths.map(p => (p.startsWith('/') ? p : `/${p}`))
 
-  return cf
-    .createInvalidation({
-      DistributionId: id,
-      InvalidationBatch: {
-        CallerReference: new Date().toISOString(),
-        Paths: {
-          Quantity: sanitizedPaths.length,
-          Items: sanitizedPaths
-        }
+  const params = {
+    DistributionId: id,
+    InvalidationBatch: {
+      CallerReference: new Date().toISOString(),
+      Paths: {
+        Quantity: sanitizedPaths.length,
+        Items: sanitizedPaths
       }
-    })
-    .promise()
+    }
+  }
+  debug('CloudFront Invalidation request: %O', params)
+  return cf.createInvalidation(params).promise()
 }
 
 async function getDistributionIdFromBucket(projectName) {

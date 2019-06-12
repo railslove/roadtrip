@@ -4,6 +4,7 @@ import untildify from 'untildify'
 import OclifCommand, { flags } from '@oclif/command'
 import Listr from 'listr'
 
+const debug = require('debug')('roadtrip:cli:base')
 const CONFIG_FILE_NAME = 'roadtrip.json'
 
 export default class TripCommand extends OclifCommand {
@@ -27,6 +28,8 @@ export default class TripCommand extends OclifCommand {
       domain: flags.domains || this.rawTripConfig.domain,
       https: flags.https || this.rawTripConfig.https || false
     }
+
+    debug('Loaded base command. data: %O', this.trip)
 
     if (!this.trip.name) {
       this.error('No project name found in roadtrip config file or arguments.')

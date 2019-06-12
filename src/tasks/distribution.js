@@ -1,27 +1,35 @@
 import * as cf from '../lib/cloudfront'
 import * as acm from '../lib/acm'
 
+const debug = require('debug')('roadtrip:task:distribution')
+
 export const create = {
   title: 'Create distribution',
   task: async (ctx, task) => {
     task.output = 'Checking if distribution exists...'
     const existingDistribution = await cf.get(ctx.trip.name)
+    debug(
+      'Existing distribution: %s',
+      existingDistribution ? existingDistribution.Id : 'none'
+    )
 
     async function getCertificate() {
-      // Don't need to get certificate if we have no domain
-      if (!ctx.trip.domain) return undefined
+      if (!ctx.trip.domain) {
+        debug('No custom domain set. No custom certificate necessary.')
+        return undefined
+      }
 
       let certificate
       if (ctx.trip.https === true) {
+        debug('Project has https activated. Trying to find a certificate.')
         task.output = 'Fetching certificate...'
         certificate = await acm.getCertificateForDomain(ctx.trip.domain)
+        debug('Found certificate: %O', certificate)
       }
 
       if (!certificate && ctx.trip.https === true) {
         throw new Error(
-          `No certificate matching the domain ${
-            ctx.trip.domain
-          } found in AWS Certificate Manager. Create or import a certificate in order to use this domain.`
+          `No certificate matching the domain ${ctx.trip.domain} found in AWS Certificate Manager. Create or import a certificate in order to use this domain.`
         )
       }
 
@@ -29,6 +37,11 @@ export const create = {
     }
 
     if (existingDistribution) {
+      debug('Distribution exists. Update configuration: %o', {
+        projectName: ctx.trip.name,
+        domain: ctx.trip.domain,
+        https: ctx.trip.https
+      })
       const certificate = await getCertificate()
       task.title = 'Update distribution'
       task.output = 'Distribution exists. Updating...'
@@ -43,12 +56,18 @@ export const create = {
       )
       ctx.cloudfrontDomainName = updatedDistribution.DomainName
       ctx.cloudfrontId = updatedDistribution.Id
+      debug('Distribution updated. Id: %s', updatedDistribution.Id)
 
       return
     }
 
     const certificate = await getCertificate()
     task.output = 'Creating distribution...'
+    debug('Distribution does not exist. Create: %o', {
+      projectName: ctx.trip.name,
+      domain: ctx.trip.domain,
+      https: ctx.trip.https
+    })
     const createdDistribution = await cf.create(
       ctx.trip.name,
       ctx.trip.domain,
@@ -61,6 +80,7 @@ export const create = {
     ctx.cloudfrontJustCreated = true
     ctx.cloudfrontDomainName = createdDistribution.DomainName
     ctx.cloudfrontId = createdDistribution.Id
+    debug('Distribution created. Id: %s', createdDistribution.Id)
   }
 }
 
@@ -84,6 +104,7 @@ export const invalidate = {
     // For now we invalidate everything on the CDN.
     const paths = ['*']
 
+    debug('Invalidate paths on cloudfront: %O', paths)
     return cf.invalidatePaths(ctx.trip.name, paths, {
       cloudfrontId: ctx.cloudfrontId
     })
