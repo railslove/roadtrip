@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Deploy and host static sites with S3, CloudFront and Route53",
   "main": "index.js",
+  "bin": {
+    "roadtrip": "./bin/run"
+  },
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "prepack": "npm run oclif-dev -- manifest && npm run oclif-dev readme",
