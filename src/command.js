@@ -22,6 +22,7 @@ export default class TripCommand extends OclifCommand {
       indexFile: 'index.html',
       errorFile: '404.html',
       cacheControl: {},
+      cdn: true,
       ...this.rawTripConfig,
       projectDir: path.resolve(fullConfigPath, '..'),
       name: flags.name || this.rawTripConfig.name,

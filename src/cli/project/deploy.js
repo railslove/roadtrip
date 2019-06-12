@@ -6,18 +6,20 @@ import * as bucket from '../../tasks/bucket'
 import * as distribution from '../../tasks/distribution'
 import * as domain from '../../tasks/domain'
 
+const debug = require('debug')('roadtrip:cli:project:deploy')
+
 export default class ProjectDeployCommand extends TripCommand {
   async run() {
     const { flags } = this.parse(ProjectDeployCommand)
-    const tasks = [
-      bucket.create,
-      bucket.website,
-      bucket.sync,
-      distribution.create,
-      distribution.invalidate
-    ]
+    const tasks = [bucket.create, bucket.website, bucket.sync]
+
+    if (this.trip.cdn === true && !flags.skipCDN) {
+      debug('cdn activated, add distribution tasks')
+      tasks.push(distribution.create, distribution.invalidate)
+    }
 
     if (flags.connectDomain) {
+      debug('connectDomain flag set, add domain.connect task')
       tasks.push(domain.connect)
     }
 
@@ -30,7 +32,10 @@ export default class ProjectDeployCommand extends TripCommand {
       this.log('')
     }
 
-    this.log(`=> CloudFront domain: ${ctx.cloudfrontDomainName}`)
+    this.log(`=> S3 bucket domain:  ${ctx.bucketDomainName}`)
+    if (ctx.cloudfrontDomainName) {
+      this.log(`=> CloudFront domain: ${ctx.cloudfrontDomainName}`)
+    }
   }
 }
 
@@ -44,5 +49,9 @@ ProjectDeployCommand.flags = {
   connectDomain: flags.boolean({
     default: false,
     description: 'also connect domain on route53'
+  }),
+  skipCDN: flags.boolean({
+    default: false,
+    description: 'skip creating cloudfront cdn'
   })
 }

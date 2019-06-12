@@ -4,15 +4,16 @@ Roadtrip is a CLI Tool to deploy and host static sites on AWS S3 and CloudFront,
 and manage DNS records using Route53 (optional).
 
 <!-- toc -->
-* [💡 How it works](#-how-it-works)
-* [🕶 At a glance](#-at-a-glance)
-* [👩‍💻 Install & Deploy](#-install--deploy)
-* [📝 Configuration](#-configuration)
-* [🔭 Branch Previews](#-branch-previews)
-* [🔨 Command Reference](#-command-reference)
-* [Alternatives](#alternatives)
-* [License](#license)
-<!-- tocstop -->
+
+- [💡 How it works](#-how-it-works)
+- [🕶 At a glance](#-at-a-glance)
+- [👩‍💻 Install & Deploy](#-install--deploy)
+- [📝 Configuration](#-configuration)
+- [🔭 Branch Previews](#-branch-previews)
+- [🔨 Command Reference](#-command-reference)
+- [Alternatives](#alternatives)
+- [License](#license)
+  <!-- tocstop -->
 
 # 💡 How it works
 
@@ -99,6 +100,7 @@ Example:
   "domain": "example.com",
   "dir": "./build",
   "https": false,
+  "cdn": true,
   "indexFile": "index.html",
   "errorFile": "404.html",
   "cacheControl": {
@@ -109,10 +111,14 @@ Example:
 
 #### name
 
+Type: `String`
+
 The name of your project. This will be the bucket's name. Can be overridden with
 the `--name` flag.
 
 #### domain
+
+Type: `String`
 
 A custom domain which will be added as alias to CloudFront. This allows you to
 add the CloudFront domain as CNAME to your domain.
@@ -130,12 +136,14 @@ automatically be added to the hosted zone for your domain.
 
 #### dir
 
+Type: `String`  
 Default: `.`
 
 The directory to sync with the bucket.
 
 #### https
 
+Type: `Boolean`  
 Default: `false`
 
 Use `true` to enable https. If you use a custom domain, you must have a valid
@@ -150,20 +158,32 @@ You can also use a wildcard certificate, e.g. for different environments on
 subdomains. Remember that a wildcard is only valid for one domain level.  
 Example: `*.example.com` works with `foo.example.com`, but not with `foo.bar.example.com`
 
+#### cdn
+
+Type: `Boolean`  
+Default: `true`
+
+Set this to `false` won't create a CloudFront distribution. You can still access
+your site with the S3 bucket's domain and use this domain as CNAME for a custom
+domain.
+
 #### indexFile
 
+Type: `String`  
 Default: `index.html`
 
 The file which will act as index page.
 
 #### errorFile
 
+Type: `String`  
 Default: `404.html`
 
 The file which will act as 404 page.
 
 #### cacheControl
 
+Type: `Object`  
 Default: `{}`
 
 Allows to add custom `Cache-Control` headers to the bucket's files using glob
@@ -213,33 +233,35 @@ $ roadtrip project:deploy --name=example-project-${BRANCH_NAME}
 ```
 
 Keep in mind that CloudFront needs ~10 minutes to roll out new distributions, so
-your branch preview won't be available immediately.  
-If you want a preview without this delay, you could have some environments
-already set-up.
+your branch preview won't be available immediately. If you want a preview
+without this delay, you can:
 
-You can also use a custom domain:
+- Have some environments already set-up.
+- Don't use CloudFront (which also means you can't use https).
 
 ```sh
 $ roadtrip project:deploy \
   --name=example-project-${BRANCH_NAME} \
   --domain=preview-${BRANCH_NAME}.example.com \
+  --skipCDN
   --connectDomain
 ```
 
 # 🔨 Command Reference
 
 <!-- commands -->
-* [`roadtrip autocomplete [SHELL]`](#roadtrip-autocomplete-shell)
-* [`roadtrip bucket:create`](#roadtrip-bucketcreate)
-* [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
-* [`roadtrip bucket:sync`](#roadtrip-bucketsync)
-* [`roadtrip bucket:website`](#roadtrip-bucketwebsite)
-* [`roadtrip distribution:create`](#roadtrip-distributioncreate)
-* [`roadtrip distribution:invalidate`](#roadtrip-distributioninvalidate)
-* [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
-* [`roadtrip help [COMMAND]`](#roadtrip-help-command)
-* [`roadtrip project:deploy`](#roadtrip-projectdeploy)
-* [`roadtrip update [CHANNEL]`](#roadtrip-update-channel)
+
+- [`roadtrip autocomplete [SHELL]`](#roadtrip-autocomplete-shell)
+- [`roadtrip bucket:create`](#roadtrip-bucketcreate)
+- [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
+- [`roadtrip bucket:sync`](#roadtrip-bucketsync)
+- [`roadtrip bucket:website`](#roadtrip-bucketwebsite)
+- [`roadtrip distribution:create`](#roadtrip-distributioncreate)
+- [`roadtrip distribution:invalidate`](#roadtrip-distributioninvalidate)
+- [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
+- [`roadtrip help [COMMAND]`](#roadtrip-help-command)
+- [`roadtrip project:deploy`](#roadtrip-projectdeploy)
+- [`roadtrip update [CHANNEL]`](#roadtrip-update-channel)
 
 ## `roadtrip autocomplete [SHELL]`
 
@@ -356,7 +378,7 @@ OPTIONS
   --[no-]https         set up the site with https
 
 DESCRIPTION
-  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the 
+  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the
   configuration will be updated.
   It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
 ```
@@ -398,7 +420,7 @@ OPTIONS
   --[no-]https         set up the site with https
 
 DESCRIPTION
-  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it 
+  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it
   will be updated.
 ```
 
@@ -437,7 +459,7 @@ OPTIONS
   --[no-]https         set up the site with https
 
 DESCRIPTION
-  Creates a bucket and uploads files onto it. Creates and configures a CloudFront distribution and links it to your 
+  Creates a bucket and uploads files onto it. Creates and configures a CloudFront distribution and links it to your
   domain.
   This task is idempotent. You can run it again to update the site.
 ```
@@ -454,6 +476,7 @@ USAGE
 ```
 
 _See code: [@oclif/plugin-update](https://github.com/oclif/plugin-update/blob/v1.3.9/src/commands/update.ts)_
+
 <!-- commandsstop -->
 
 # Alternatives

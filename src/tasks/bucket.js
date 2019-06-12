@@ -32,7 +32,9 @@ export const website = {
       indexFile,
       errorFile
     })
-    return s3.website(ctx.trip.name, { indexFile, errorFile })
+    await s3.website(ctx.trip.name, { indexFile, errorFile })
+    const bucketDomain = await s3.getDomain(ctx.trip.name)
+    ctx.bucketDomainName = bucketDomain
   }
 }
 

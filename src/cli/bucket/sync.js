@@ -3,7 +3,8 @@ import * as bucket from '../../tasks/bucket'
 
 export default class BucketSyncCommand extends TripCommand {
   async run() {
-    await this.runTasks([bucket.sync])
+    const ctx = await this.runTasks([bucket.sync])
+    this.log(`=> S3 bucket domain: ${ctx.bucketDomainName}`)
   }
 }
 
