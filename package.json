@@ -1,6 +1,6 @@
 {
   "name": "roadtrip-cli",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Deploy and host static sites with S3, CloudFront and Route53",
   "main": "index.js",
   "scripts": {

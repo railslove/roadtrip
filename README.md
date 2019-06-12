@@ -229,6 +229,7 @@ $ roadtrip project:deploy \
 # 🔨 Command Reference
 
 <!-- commands -->
+* [`roadtrip autocomplete [SHELL]`](#roadtrip-autocomplete-shell)
 * [`roadtrip bucket:create`](#roadtrip-bucketcreate)
 * [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
 * [`roadtrip bucket:sync`](#roadtrip-bucketsync)
@@ -238,6 +239,30 @@ $ roadtrip project:deploy \
 * [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
 * [`roadtrip help [COMMAND]`](#roadtrip-help-command)
 * [`roadtrip project:deploy`](#roadtrip-projectdeploy)
+* [`roadtrip update [CHANNEL]`](#roadtrip-update-channel)
+
+## `roadtrip autocomplete [SHELL]`
+
+display autocomplete installation instructions
+
+```
+USAGE
+  $ roadtrip autocomplete [SHELL]
+
+ARGUMENTS
+  SHELL  shell type
+
+OPTIONS
+  -r, --refresh-cache  Refresh cache (ignores displaying instructions)
+
+EXAMPLES
+  $ roadtrip autocomplete
+  $ roadtrip autocomplete bash
+  $ roadtrip autocomplete zsh
+  $ roadtrip autocomplete --refresh-cache
+```
+
+_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.1.1/src/commands/autocomplete/index.ts)_
 
 ## `roadtrip bucket:create`
 
@@ -257,6 +282,8 @@ DESCRIPTION
   Creates a bucket with the name of the site. Does nothing if the bucket already exists.
 ```
 
+_See code: [src/cli/bucket/create.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/bucket/create.js)_
+
 ## `roadtrip bucket:setup`
 
 fully setup roadtrip s3 bucket
@@ -274,6 +301,8 @@ OPTIONS
 DESCRIPTION
   Creates, configures and syncs a project. It runs bucket:setup, bucket:website and bucket:sync consecutively.
 ```
+
+_See code: [src/cli/bucket/setup.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/bucket/setup.js)_
 
 ## `roadtrip bucket:sync`
 
@@ -293,6 +322,8 @@ DESCRIPTION
   Checks which files have changed and creates/updates/deletes them in the bucket.
 ```
 
+_See code: [src/cli/bucket/sync.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/bucket/sync.js)_
+
 ## `roadtrip bucket:website`
 
 configures the s3 bucket as website
@@ -307,6 +338,8 @@ OPTIONS
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
 ```
+
+_See code: [src/cli/bucket/website.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/bucket/website.js)_
 
 ## `roadtrip distribution:create`
 
@@ -328,6 +361,8 @@ DESCRIPTION
   It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
 ```
 
+_See code: [src/cli/distribution/create.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/distribution/create.js)_
+
 ## `roadtrip distribution:invalidate`
 
 invalidates the distribution's cache
@@ -342,6 +377,8 @@ OPTIONS
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
 ```
+
+_See code: [src/cli/distribution/invalidate.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/distribution/invalidate.js)_
 
 ## `roadtrip domain:connect ALIAS`
 
@@ -364,6 +401,8 @@ DESCRIPTION
   Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it 
   will be updated.
 ```
+
+_See code: [src/cli/domain/connect.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/domain/connect.js)_
 
 ## `roadtrip help [COMMAND]`
 
@@ -402,6 +441,19 @@ DESCRIPTION
   domain.
   This task is idempotent. You can run it again to update the site.
 ```
+
+_See code: [src/cli/project/deploy.js](https://github.com/railslove/roadtrip/blob/v1.0.0/src/cli/project/deploy.js)_
+
+## `roadtrip update [CHANNEL]`
+
+update the roadtrip CLI
+
+```
+USAGE
+  $ roadtrip update [CHANNEL]
+```
+
+_See code: [@oclif/plugin-update](https://github.com/oclif/plugin-update/blob/v1.3.9/src/commands/update.ts)_
 <!-- commandsstop -->
 
 # Alternatives
