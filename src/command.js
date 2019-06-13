@@ -10,6 +10,7 @@ const CONFIG_FILE_NAME = 'roadtrip.json'
 export default class TripCommand extends OclifCommand {
   async init() {
     const { flags } = this.parse(this.constructor)
+    this.flags = flags
 
     // Try to load config file, store in `this.tripconfig`
     this.rawTripConfig = {}
@@ -38,12 +39,15 @@ export default class TripCommand extends OclifCommand {
   }
 
   async runTasks(tasks, ctx = {}) {
-    const listr = new Listr(tasks)
+    let renderer = 'default'
+
+    if (this.flags.verbose || process.env.CI) {
+      renderer = 'verbose'
+    }
+
+    const listr = new Listr(tasks, { renderer })
     return listr
-      .run({
-        trip: this.trip,
-        ...ctx
-      })
+      .run({ trip: this.trip, ...ctx })
       .catch(error => this.error(error.toString()))
   }
 }
@@ -66,5 +70,9 @@ TripCommand.flags = {
     default: false,
     description: 'set up the site with https',
     allowNo: true
+  }),
+  verbose: flags.boolean({
+    default: false,
+    description: 'turn on verbose output'
   })
 }
