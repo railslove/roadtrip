@@ -4,15 +4,16 @@ Roadtrip is a CLI Tool to deploy and host static sites on AWS S3 and CloudFront,
 and manage DNS records using Route53 (optional).
 
 <!-- toc -->
-* [💡 How it works](#-how-it-works)
-* [🕶 At a glance](#-at-a-glance)
-* [👩‍💻 Install & Deploy](#-install--deploy)
-* [📝 Configuration](#-configuration)
-* [🔭 Branch Previews](#-branch-previews)
-* [🔨 Command Reference](#-command-reference)
-* [Alternatives](#alternatives)
-* [License](#license)
-<!-- tocstop -->
+
+- [💡 How it works](#-how-it-works)
+- [🕶 At a glance](#-at-a-glance)
+- [👩‍💻 Install & Deploy](#-install--deploy)
+- [📝 Configuration](#-configuration)
+- [🔭 Branch Previews](#-branch-previews)
+- [🔨 Command Reference](#-command-reference)
+- [Alternatives](#alternatives)
+- [License](#license)
+  <!-- tocstop -->
 
 # 💡 How it works
 
@@ -249,17 +250,18 @@ $ roadtrip project:deploy \
 # 🔨 Command Reference
 
 <!-- commands -->
-* [`roadtrip autocomplete [SHELL]`](#roadtrip-autocomplete-shell)
-* [`roadtrip bucket:create`](#roadtrip-bucketcreate)
-* [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
-* [`roadtrip bucket:sync`](#roadtrip-bucketsync)
-* [`roadtrip bucket:website`](#roadtrip-bucketwebsite)
-* [`roadtrip distribution:create`](#roadtrip-distributioncreate)
-* [`roadtrip distribution:invalidate`](#roadtrip-distributioninvalidate)
-* [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
-* [`roadtrip help [COMMAND]`](#roadtrip-help-command)
-* [`roadtrip project:deploy`](#roadtrip-projectdeploy)
-* [`roadtrip update [CHANNEL]`](#roadtrip-update-channel)
+
+- [`roadtrip autocomplete [SHELL]`](#roadtrip-autocomplete-shell)
+- [`roadtrip bucket:create`](#roadtrip-bucketcreate)
+- [`roadtrip bucket:setup`](#roadtrip-bucketsetup)
+- [`roadtrip bucket:sync`](#roadtrip-bucketsync)
+- [`roadtrip bucket:website`](#roadtrip-bucketwebsite)
+- [`roadtrip distribution:create`](#roadtrip-distributioncreate)
+- [`roadtrip distribution:invalidate`](#roadtrip-distributioninvalidate)
+- [`roadtrip domain:connect ALIAS`](#roadtrip-domainconnect-alias)
+- [`roadtrip help [COMMAND]`](#roadtrip-help-command)
+- [`roadtrip project:deploy`](#roadtrip-projectdeploy)
+- [`roadtrip update [CHANNEL]`](#roadtrip-update-channel)
 
 ## `roadtrip autocomplete [SHELL]`
 
@@ -297,6 +299,7 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 
 DESCRIPTION
   Creates a bucket with the name of the site. Does nothing if the bucket already exists.
@@ -317,6 +320,7 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 
 DESCRIPTION
   Creates, configures and syncs a project. It runs bucket:setup, bucket:website and bucket:sync consecutively.
@@ -337,6 +341,7 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 
 DESCRIPTION
   Checks which files have changed and creates/updates/deletes them in the bucket.
@@ -357,6 +362,7 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 ```
 
 _See code: [src/cli/bucket/website.js](https://github.com/railslove/roadtrip/blob/v1.1.0/src/cli/bucket/website.js)_
@@ -374,9 +380,10 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 
 DESCRIPTION
-  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the 
+  Creates a distribution and connects it to the S3 bucket of the site. If the distribution already exists, the
   configuration will be updated.
   It looks for a matching certificate in the Certificate Manager. If no Certificate is found, it exits with an error.
 ```
@@ -396,6 +403,7 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 ```
 
 _See code: [src/cli/distribution/invalidate.js](https://github.com/railslove/roadtrip/blob/v1.1.0/src/cli/distribution/invalidate.js)_
@@ -416,9 +424,10 @@ OPTIONS
   -d, --domain=domain  custom domain for cloudfront
   -n, --name=name      name of the project
   --[no-]https         set up the site with https
+  --verbose            turn on verbose output
 
 DESCRIPTION
-  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it 
+  Creates a record pointing to the CloudFront URL as an alias. If the record doesn't exist or the alias is wrong, it
   will be updated.
 ```
 
@@ -456,9 +465,10 @@ OPTIONS
   --connectDomain      also connect domain on route53
   --[no-]https         set up the site with https
   --skipCDN            skip creating cloudfront cdn
+  --verbose            turn on verbose output
 
 DESCRIPTION
-  Creates a bucket and uploads files onto it. Creates and configures a CloudFront distribution and links it to your 
+  Creates a bucket and uploads files onto it. Creates and configures a CloudFront distribution and links it to your
   domain.
   This task is idempotent. You can run it again to update the site.
 ```
@@ -475,6 +485,7 @@ USAGE
 ```
 
 _See code: [@oclif/plugin-update](https://github.com/oclif/plugin-update/blob/v1.3.9/src/commands/update.ts)_
+
 <!-- commandsstop -->
 
 # Alternatives
